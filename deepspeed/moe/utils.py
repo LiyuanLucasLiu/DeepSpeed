@@ -10,6 +10,7 @@ import torch
 from torch import nn
 
 from .layer import MoE
+from deepspeed.utils import logger
 
 
 def has_moe_layers(m: nn.Module) -> Tuple[bool, int]:
@@ -18,6 +19,7 @@ def has_moe_layers(m: nn.Module) -> Tuple[bool, int]:
 
     for module in m.modules():
         if isinstance(module, MoE):
+            logger.info(f'{type(module)} recognized as MoE')
             has_moe = True
             num_experts = module.num_experts
             break

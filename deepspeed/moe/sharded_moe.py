@@ -340,8 +340,14 @@ def top2gating(logits: Tensor, capacity_factor: float, min_capacity: int) -> Tup
 
     return l_aux, combine_weights, dispatch_mask, exp_counts
 
+class GateType(type):
+    def __instancecheck__(self, instance):
+        return getattr(instance, 'is_DS_TopK', False)
 
-class TopKGate(Module):
+class GateBase(metaclass=GateType):
+    pass
+
+class TopKGate(Module, GateBase):
     """Gate module which implements Top2Gating as described in Gshard_.
     ::
 
@@ -370,7 +376,8 @@ class TopKGate(Module):
                  drop_tokens: bool = True,
                  use_rts: bool = True) -> None:
         super().__init__()
-
+        self.is_DS_TopK = True
+        
         # Only top-1 and top-2 are supported at the moment.
         if k != 1 and k != 2:
             raise ValueError('Only top-1 and top-2 gatings are supported.')
@@ -417,8 +424,14 @@ class TopKGate(Module):
 
         return gate_output
 
+class MoELayerType(type):
+    def __instancecheck__(self, instance):
+        return getattr(instance, 'is_DS_MoELayer', False)
 
-class MOELayer(Base):
+class MoELayerBase(metaclass=MoELayerType):
+    pass
+
+class MOELayer(Base, MoELayerBase):
     """MOELayer module which implements MixtureOfExperts as described in Gshard_.
     ::
 
@@ -444,6 +457,8 @@ class MOELayer(Base):
                  num_local_experts: int,
                  use_tutel: bool = False) -> None:
         super().__init__()
+        self.is_DS_MoELayer = True
+        
         self.gate = gate
         self.experts = experts
         self.ep_group = None

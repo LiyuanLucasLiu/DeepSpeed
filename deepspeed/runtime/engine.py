@@ -1114,16 +1114,20 @@ class DeepSpeedEngine(Module):
         # MoE related initialization
         for _, module in self.module.named_modules():
             if isinstance(module, MoE):
+                logger.info(f'{type(module)} recognized as MoE')
                 self.has_moe_layers = True
                 self.num_experts.append(module.num_experts)
-
+                
+        # p(isinstance(self.module.layers[1].mlp, MoE))
         if self.has_moe_layers:
             for _, module in self.module.named_modules():
                 if isinstance(module, TopKGate):
+                    logger.info(f'{type(module)} recognized as TopKGate')
                     self.gate_modules.append(module)
                     if self.wall_clock_breakdown():
                         module.wall_clock_breakdown = True
                 if isinstance(module, MOELayer):
+                    logger.info(f'{type(module)} recognized as MOELayer')
                     self.moe_layers.append(module)
                     if self.wall_clock_breakdown():
                         module.wall_clock_breakdown = True

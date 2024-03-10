@@ -13,8 +13,14 @@ from deepspeed.utils import groups, log_dist
 from .experts import Experts
 from .sharded_moe import MOELayer, TopKGate
 
+class MoEType(type):
+    def __instancecheck__(cls, instance):
+        return getattr(instance, 'is_DS_MoE', False)
 
-class MoE(nn.Module):
+class MoEBase(metaclass=MoEType):
+    pass
+
+class MoE(nn.Module, MoEBase):
     """Initialize an MoE layer.
 
     Arguments:
@@ -32,8 +38,7 @@ class MoE(nn.Module):
         use_rts (bool, optional): default=True, whether to use Random Token Selection.
         use_tutel (bool, optional): default=False, whether to use Tutel optimizations (if installed).
         enable_expert_tensor_parallelism (bool, optional): default=False, whether to use tensor parallelism for experts
-    """
-
+    """    
     def __init__(self,
                  hidden_size: int,
                  expert: nn.Module,
@@ -51,7 +56,8 @@ class MoE(nn.Module):
                  enable_expert_tensor_parallelism: bool = False) -> None:
 
         super(MoE, self).__init__()
-
+        self.is_DS_MoE = True
+        
         self.use_residual = use_residual
         self.enable_expert_tensor_parallelism = enable_expert_tensor_parallelism
         assert num_experts % ep_size == 0, f"Number of experts ({num_experts}) should be divisible by expert parallel size ({ep_size})"
@@ -80,6 +86,7 @@ class MoE(nn.Module):
             # coefficient is used for weighted sum of the output of expert and mlp
             self.coefficient = nn.Linear(hidden_size, 2)
 
+    
     def set_deepspeed_parallelism(self, use_data_before_expert_parallel_: bool = False) -> None:
         self._create_process_groups(use_data_before_expert_parallel_=use_data_before_expert_parallel_)
 
